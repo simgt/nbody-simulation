@@ -12,6 +12,7 @@ void compute (
         cl_kernel kernel,
         cl_command_queue,
         cl_mem p_buffer,
+        cl_mem v_buffer,
         float dt
     );
 
@@ -111,27 +112,41 @@ int main () {
     }
  
     // create OpenCL buffer from the OpenGL vertex buffer
+
     cl_mem p_buffer = clCreateFromGLBuffer(
-                            clcontext,
-                            CL_MEM_READ_WRITE,
+                            clcontext, CL_MEM_READ_WRITE,
                             mesh->vertex_buffer()->handle(),
                             &error
                         );
-    if (!p_buffer) {
-        std::cerr << "error: Failed to allocate device memory!" << std::endl;
+
+    cl_mem v_buffer = clCreateBuffer(
+                            clcontext, CL_MEM_READ_WRITE,
+                            sizeof(Vec2f) * PARTICLES_COUNT,
+                            0,
+                            &error
+                        );
+    
+    if (!p_buffer || !v_buffer) {
+        std::cerr << "error: Failed to create buffers!" << std::endl;
         exit(1);
     }
 
     // initialize position and velocity buffers
     Vec2f p_data[PARTICLES_COUNT];
+    Vec2f v_data[PARTICLES_COUNT];
     for (uint i = 0; i < PARTICLES_COUNT; i++) {
         p_data[i] = Vec2f::Random();
         p_data[i].normalize();
+
+        v_data[i] = Vec2f::Random();
+        v_data[i].normalize();
     }
 
-    error = clEnqueueWriteBuffer(command_queue, p_buffer, CL_TRUE, 0, sizeof(Vec2f) * PARTICLES_COUNT, p_data, 0, 0, 0);
+    error  = clEnqueueWriteBuffer(command_queue, p_buffer, CL_TRUE, 0, sizeof(Vec2f) * PARTICLES_COUNT, p_data, 0, 0, 0);
+    error |= clEnqueueWriteBuffer(command_queue, v_buffer, CL_TRUE, 0, sizeof(Vec2f) * PARTICLES_COUNT, v_data, 0, 0, 0);
+    
     if (error != CL_SUCCESS) {
-        std::cerr << "Error: Failed to write to source array! " << error << std::endl;
+        std::cerr << "Error: Failed to initialize buffers! " << error << std::endl;
         exit(1);
     }
 
@@ -143,7 +158,7 @@ int main () {
         float dt = context.time();
         //float fps = 1 / t;
 
-        compute(device, clcontext, kernel, command_queue, p_buffer, dt);
+        compute(device, clcontext, kernel, command_queue, p_buffer, v_buffer, dt);
         draw(context, *shader, *mesh);
     }
 
