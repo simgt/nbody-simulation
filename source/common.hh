@@ -5,4 +5,4 @@ typedef unsigned int uint;
 
 #define WINDOW_W 800
 #define WINDOW_H 600
-#define PARTICLES_COUNT 4096
+#define PARTICLES_COUNT 512

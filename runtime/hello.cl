@@ -1,4 +1,9 @@
-// Simple compute kernel which computes the square of an input array 
+float bound(float c, float a, float b) {
+    if (c < a) c = a;
+    if (c > b) c = b;
+    else c = c;
+    return c;
+}
 
 __kernel void position (
 		__global float2* position,
@@ -9,12 +14,25 @@ __kernel void position (
 
 	uint i = get_global_id(0);
 	if (i < count) {
-		position[i] += velocity[i] * dt;
+		float2 p = position[i];
+		float2 v = velocity[i];
 
-		if (position[i].x < -1 || position[i].x > 1
-		 || position[i].y < -1 || position[i].y > 1) {
-			position[i].x = 0;
-			position[i].y = 0;
+		v.y -= 9.8 * dt;
+		p += v * dt;
+
+		if (p.x < -1 || p.x > 1) {
+			p.x = bound(p.x, -1.0, 1.0);
+			v.x = -v.x;
 		}
+
+		if (p.y < -1) {
+			p.y = -1;
+			v.y = -v.y;
+			v.x /= 1.1;
+			v.y /= 1.1;
+		}
+
+		position[i] = p;
+		velocity[i] = v;
 	}
 }
