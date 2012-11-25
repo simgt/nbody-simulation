@@ -1,6 +1,7 @@
-#include <glte/glte.hh>
-
+#include "common.hh"
 #include "mesh.hh"
+
+#include <glte/glte.hh>
 
 void draw (
 		te::Context& context,
@@ -9,6 +10,16 @@ void draw (
 	) {
 	context.clear();
 	glUseProgram(shader.handle());
+
+    // retrieve window size
+    GLuint uniform_viewport_size = glGetUniformLocation(shader.handle(), "viewport_size");
+    int width, height;
+    glfwGetWindowSize(&width, &height);
+    Vec2f viewport_size(width, height);
+    glUniform2fv(uniform_viewport_size, 1, viewport_size.data());
+
+    GLuint uniform_point_size = glGetUniformLocation(shader.handle(), "point_size");
+    glUniform1f(uniform_point_size, PARTICLES_SIZE);
 
     // bind the VAO associated to the mesh
     glBindVertexArray(mesh.handle());
@@ -26,7 +37,7 @@ void draw (
     CHECK_GL_ERROR();
 
     // draw mesh's elements
-    glPointSize(2);
+    glPointSize(20);
     glDrawArrays(
         GL_POINTS,
         0,

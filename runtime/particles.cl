@@ -1,4 +1,4 @@
-#define BALL_RADIUS 0.04
+#define BALL_RADIUS ((20.0 / 600.0))
 
 float bind(float c, float a, float b) {
     if (c < a) c = a;
@@ -27,9 +27,9 @@ __kernel void newton (
 				float d = length(c);				
 				if (d < 2 * BALL_RADIUS) {
 					// minimum translation distance to push balls appart
-					float2 mtd = c * (float)(2.0 * BALL_RADIUS - d);
+					//float2 mtd = c * (float)(2.0 * BALL_RADIUS - d);
 					
-					p += mtd / 2.0;
+					//p += mtd / 2.0;
 
 					// Get the components of the velocity vectors
 					// which are parallel to the collision.
@@ -40,7 +40,7 @@ __kernel void newton (
 					float uj = dot(v_in[j], c);
 
 					// ignore if the particles are moving away from each-other
-					if (ui >= 0.0) continue;
+					if (ui > 0.0 && uj < 0.0) continue;
 
 					// Replace the collision velocity components
 					// with the new ones
@@ -48,22 +48,22 @@ __kernel void newton (
 				}
 			}
 		
-		//v.y -= 9.8 * dt;
+		v.y -= 9.8 * dt;
 
 		p += v * dt;	
 
-		if (p.x < -1 || p.x > 1) {
+		if (p.x < -1 + BALL_RADIUS || p.x > 1 - BALL_RADIUS) {
 			v.x = -v.x;
 		}
 
-		if (p.y < -1 || p.y > 1) {
+		if (p.y < -1 + BALL_RADIUS || p.y > 1 - BALL_RADIUS) {
 			v.y = -v.y;
-			//v.x *= 0.9;
-			//v.y *= 0.9;
+			v.x *= 0.9;
+			v.y *= 0.9;
 		}
 
-		p.x = bind(p.x, -1, 1);
-		p.y = bind(p.y, -1, 1);	
+		p.x = bind(p.x, -1 + BALL_RADIUS, 1 - BALL_RADIUS);
+		p.y = bind(p.y, -1 + BALL_RADIUS, 1 - BALL_RADIUS);	
 
 		if (length(v) < 0.000001) {
 			v.x = 0;
