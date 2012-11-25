@@ -6,12 +6,21 @@
 #include <iostream>
 #include <cstdlib>
 
+template <typename T>
+void swap (T& a, T& b) {
+    T tmp = a;
+    a = b;
+    b = tmp;
+}
+
 void compute (
         cl_device_id device,
         cl_context context,
         cl_kernel kernel,
         cl_command_queue,
         cl_mem p_buffer,
+        cl_mem q_buffer,
+        cl_mem u_buffer,
         cl_mem v_buffer,
         float dt
     );
@@ -36,8 +45,10 @@ int main () {
                                     "solid.Fragment"
                                 );
 
-    ParticleMesh* mesh = new ParticleMesh;
-    mesh->vertex_buffer()->reserve(PARTICLES_COUNT);
+    ParticleMesh* p_mesh = new ParticleMesh;
+    ParticleMesh* q_mesh = new ParticleMesh;
+    p_mesh->vertex_buffer()->reserve(PARTICLES_COUNT);
+    q_mesh->vertex_buffer()->reserve(PARTICLES_COUNT);
 
     // ------------
     //    OPENCL 
@@ -115,7 +126,21 @@ int main () {
 
     cl_mem p_buffer = clCreateFromGLBuffer(
                             clcontext, CL_MEM_READ_WRITE,
-                            mesh->vertex_buffer()->handle(),
+                            p_mesh->vertex_buffer()->handle(),
+                            &error
+                        );
+
+    cl_mem q_buffer = clCreateFromGLBuffer(
+                            clcontext, CL_MEM_READ_WRITE,
+                            q_mesh->vertex_buffer()->handle(),
+                            &error
+                        );
+
+    // create velocity buffers
+    cl_mem u_buffer = clCreateBuffer(
+                            clcontext, CL_MEM_READ_WRITE,
+                            sizeof(Vec2f) * PARTICLES_COUNT,
+                            0,
                             &error
                         );
 
@@ -133,22 +158,23 @@ int main () {
 
     // initialize position and velocity buffers
     Vec2f p_data[PARTICLES_COUNT];
-    Vec2f v_data[PARTICLES_COUNT];
+    Vec2f u_data[PARTICLES_COUNT];
     for (uint i = 0; i < PARTICLES_COUNT; i++) {
         p_data[i] = Vec2f::Random();
         p_data[i].normalize();
 
-        v_data[i] = Vec2f::Random();
-        v_data[i].normalize();
+        u_data[i] = Vec2f::Random();
+        u_data[i].normalize();
     }
 
     error  = clEnqueueWriteBuffer(command_queue, p_buffer, CL_TRUE, 0, sizeof(Vec2f) * PARTICLES_COUNT, p_data, 0, 0, 0);
-    error |= clEnqueueWriteBuffer(command_queue, v_buffer, CL_TRUE, 0, sizeof(Vec2f) * PARTICLES_COUNT, v_data, 0, 0, 0);
+    error |= clEnqueueWriteBuffer(command_queue, u_buffer, CL_TRUE, 0, sizeof(Vec2f) * PARTICLES_COUNT, u_data, 0, 0, 0);
     
     if (error != CL_SUCCESS) {
         std::cerr << "Error: Failed to initialize buffers! " << error << std::endl;
         exit(1);
     }
+
 
     // -------------
     //    LOOPING
@@ -158,9 +184,15 @@ int main () {
         float dt = context.time();
         //float fps = 1 / t;
 
-        compute(device, clcontext, kernel, command_queue, p_buffer, v_buffer, dt);
-        draw(context, *shader, *mesh);
+        compute(device, clcontext, kernel, command_queue, p_buffer, q_buffer, u_buffer, v_buffer, dt);
+        draw(context, *shader, *p_mesh);
+
+        // swap buffers
+        swap(p_buffer, q_buffer);
+        swap(u_buffer, v_buffer);
+        swap(p_mesh, q_mesh);
     }
+
 
     // ------------
     //    OPENCL 

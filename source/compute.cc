@@ -8,8 +8,10 @@ void compute (
 		cl_context context,
 		cl_kernel kernel,
 		cl_command_queue queue,
-		cl_mem p_buffer,
-		cl_mem v_buffer,
+        cl_mem p_buffer,
+        cl_mem q_buffer,
+        cl_mem u_buffer,
+        cl_mem v_buffer,
 		float dt
 	) {
 	cl_int error;
@@ -18,9 +20,11 @@ void compute (
 	// set kernel's arguments
     error = 0;
     error  = clSetKernelArg(kernel, 0, sizeof(cl_mem), &p_buffer);
-    error  = clSetKernelArg(kernel, 1, sizeof(cl_mem), &v_buffer);
-    error |= clSetKernelArg(kernel, 2, sizeof(uint), &count);
-    error |= clSetKernelArg(kernel, 3, sizeof(float), &dt);
+    error |= clSetKernelArg(kernel, 1, sizeof(cl_mem), &q_buffer);
+    error |= clSetKernelArg(kernel, 2, sizeof(cl_mem), &u_buffer);
+    error |= clSetKernelArg(kernel, 3, sizeof(cl_mem), &v_buffer);
+    error |= clSetKernelArg(kernel, 4, sizeof(uint), &count);
+    error |= clSetKernelArg(kernel, 5, sizeof(float), &dt);
     if (error != CL_SUCCESS) {
         std::cerr << "error: Failed to set kernel arguments! " << error << std::endl;
         exit(EXIT_FAILURE);

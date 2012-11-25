@@ -1,4 +1,4 @@
-float bound(float c, float a, float b) {
+float bind(float c, float a, float b) {
     if (c < a) c = a;
     if (c > b) c = b;
     else c = c;
@@ -6,22 +6,24 @@ float bound(float c, float a, float b) {
 }
 
 __kernel void position (
-		__global float2* position,
-		__global float2* velocity,
+		__global float2* position_in,
+		__global float2* position_out,
+		__global float2* velocity_in,
+		__global float2* velocity_out,
 		const uint count,
 		const float dt
 	) {
 
 	uint i = get_global_id(0);
 	if (i < count) {
-		float2 p = position[i];
-		float2 v = velocity[i];
+		float2 p = position_in[i];
+		float2 v = velocity_in[i];
 
 		v.y -= 9.8 * dt;
 		p += v * dt;
 
 		if (p.x < -1 || p.x > 1) {
-			p.x = bound(p.x, -1.0, 1.0);
+			p.x = bind(p.x, -1.0, 1.0);
 			v.x = -v.x;
 		}
 
@@ -32,7 +34,7 @@ __kernel void position (
 			v.y /= 1.1;
 		}
 
-		position[i] = p;
-		velocity[i] = v;
+		position_out[i] = p;
+		velocity_out[i] = v;
 	}
 }
