@@ -5,7 +5,7 @@ float bind(float c, float a, float b) {
     return c;
 }
 
-__kernel void position (
+__kernel void newton (
 		__global float2* position_in,
 		__global float2* position_out,
 		__global float2* velocity_in,
@@ -30,8 +30,8 @@ __kernel void position (
 		if (p.y < -1) {
 			p.y = -1;
 			v.y = -v.y;
-			v.x /= 1.1;
-			v.y /= 1.1;
+			v.x *= 0.9;
+			v.y *= 0.7;
 		}
 
 		position_out[i] = p;

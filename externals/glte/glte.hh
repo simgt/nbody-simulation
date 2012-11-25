@@ -12,5 +12,4 @@ extern "C" {
 #include "core/mesh.hh"
 #include "core/buffer.hh"
 #include "core/shader.hh"
-#include "core/driver.hh"
 #include "core/texture.hh"

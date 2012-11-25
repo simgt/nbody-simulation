@@ -89,7 +89,7 @@ int main () {
     }
  
     // create the compute program from the source buffer
-    const char* kernel_source = loadSource("runtime/hello.cl");
+    const char* kernel_source = loadSource("runtime/particles.cl");
     cl_program program = clCreateProgramWithSource(clcontext, 1, &kernel_source, 0, &error);
     if (!program) {
         std::cerr << "error: Failed to create compute program!" << std::endl;
@@ -109,7 +109,7 @@ int main () {
     }
  
     // create the compute kernel in the program
-    cl_kernel kernel = clCreateKernel(program, "position", &error);
+    cl_kernel kernel = clCreateKernel(program, "newton", &error);
     if (!kernel || error != CL_SUCCESS) {
         std::cerr << "error: Failed to create compute kernel!" << std::endl;
         exit(1);

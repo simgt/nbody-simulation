@@ -19,45 +19,11 @@ typedef Eigen::Vector3i Vec3i;
 
 typedef Eigen::Matrix4f Mat4f;
 
-using Eigen::Affine3f;
-using Eigen::Projective3f;
-
 // DEFINES
 
 #ifndef M_PI
 #define M_PI 3.141592653589793
 #endif
-
-
-// DEBUG
-
-#include <cassert>
-
-#ifdef NDEBUG
-#define outlog(x)
-#else
-#include <iostream>
-#define outlog(x) \
-	std::cout << #x << ": " << x << std::endl;
-#endif
-
-// MATHS
-
-namespace te {
-	inline const Projective3f perspective (float fov, float aspect, float near, float far) {
-	    Projective3f p;
-
-	    float focal = 1.0f / std::tan(fov / 2.0f); // 1 / tan(fov_in_rad / 2)
-	    
-	    p.matrix() << focal / aspect, 0,    0,                           0,
-	    			  0,             focal, 0,                           0,
-	    			  0,             0,     (near + far) / (far - near), -2.0f * near * far / (far - near),
-	    			  0,             0,     1,                           0;
-	    /// @todo check why the 1 on the last row is not a -1
-
-	    return p;
-	}
-}
 
 // CORE
 
