@@ -1,6 +1,7 @@
 #include "cl.hh"
 #include "common.hh"
 
+#include <glte/glte.hh>
 #include <iostream>
 
 void compute (
@@ -44,11 +45,20 @@ void compute (
     if (global < local)
         local = global;
 
+    glFinish();
+    clEnqueueAcquireGLObjects(queue, 1, &p_buffer, 0, 0, 0);
+    clEnqueueAcquireGLObjects(queue, 1, &q_buffer, 0, 0, 0);
+
     error = clEnqueueNDRangeKernel(
                 queue, kernel, 1,
                 0, &global, &local,
                 0, 0, 0
             );
+
+    clEnqueueReleaseGLObjects(queue, 1, &p_buffer, 0, 0, 0);
+    clEnqueueAcquireGLObjects(queue, 1, &q_buffer, 0, 0, 0);
+    clFinish(queue);
+
     if (error) {
         std::cerr << "error: Failed to execute kernel! " << error << std::endl;
         exit(EXIT_FAILURE);

@@ -1,11 +1,11 @@
 #include <glte/glte.hh>
 
-#include "particle_mesh.hh"
+#include "mesh.hh"
 
 void draw (
 		te::Context& context,
 		te::Shader& shader,
-		ParticleMesh& mesh
+		Mesh& mesh
 	) {
 	context.clear();
 	glUseProgram(shader.handle());

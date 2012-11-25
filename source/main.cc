@@ -1,8 +1,8 @@
 #include "common.hh"
 #include "cl.hh"
-#include "particle_mesh.hh"
-#include <glte/glte.hh>
+#include "mesh.hh"
 
+#include <glte/glte.hh>
 #include <iostream>
 #include <cstdlib>
 
@@ -28,7 +28,7 @@ void compute (
 void draw (
         te::Context& context,
         te::Shader& shader,
-        ParticleMesh& mesh
+        Mesh& mesh
     );
 
 int main () {
@@ -45,8 +45,8 @@ int main () {
                                     "solid.Fragment"
                                 );
 
-    ParticleMesh* p_mesh = new ParticleMesh;
-    ParticleMesh* q_mesh = new ParticleMesh;
+    Mesh* p_mesh = new Mesh;
+    Mesh* q_mesh = new Mesh;
     p_mesh->vertex_buffer()->reserve(PARTICLES_COUNT);
     q_mesh->vertex_buffer()->reserve(PARTICLES_COUNT);
 
@@ -164,7 +164,7 @@ int main () {
         p_data[i].normalize();
 
         u_data[i] = Vec2f::Random();
-        u_data[i].normalize();
+        u_data[i] = u_data[i].normalized() / 4;
     }
 
     error  = clEnqueueWriteBuffer(command_queue, p_buffer, CL_TRUE, 0, sizeof(Vec2f) * PARTICLES_COUNT, p_data, 0, 0, 0);

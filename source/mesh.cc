@@ -1,18 +1,18 @@
-#include "particle_mesh.hh"
+#include "mesh.hh"
 #include <glte/glte.hh>
 
 #include <cassert>
 #include <cstddef>
 
-ParticleMesh::ParticleMesh ()
-	: ParticleMesh (GL_STATIC_DRAW) {
+Mesh::Mesh ()
+	: Mesh (GL_STATIC_DRAW) {
 }
 
-ParticleMesh::ParticleMesh (GLenum vertex_hint)
-	: ParticleMesh (new Buffer(vertex_hint)) {
+Mesh::Mesh (GLenum vertex_hint)
+	: Mesh (new Buffer(vertex_hint)) {
 }
 
-ParticleMesh::ParticleMesh (Buffer* vertex_buffer)
+Mesh::Mesh (Buffer* vertex_buffer)
 	: vertex_buffer_ (vertex_buffer) {
 
 	assert(vertex_buffer_ != 0);
@@ -36,6 +36,6 @@ ParticleMesh::ParticleMesh (Buffer* vertex_buffer)
 	glBindVertexArray(0);
 }
 
-ParticleMesh::~ParticleMesh () {
+Mesh::~Mesh () {
 	glDeleteVertexArrays(1, &handle_);
 }
