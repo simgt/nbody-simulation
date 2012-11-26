@@ -26,12 +26,20 @@ Mesh::Mesh (Buffer* vertex_buffer)
 	
 	// setup attributes
 	glVertexAttribPointer(
-		te::Shader::ATTRIB_POSITION,
-		2, GL_FLOAT,
-		GL_FALSE,
-		sizeof(Vec2f),
-		0
-	);
+			te::Shader::ATTRIB_POSITION,
+			4, GL_FLOAT,
+			GL_FALSE,
+			sizeof(Particle),
+			reinterpret_cast<void*>(offsetof(Particle, position))
+		);
+
+	glVertexAttribPointer(
+			te::Shader::ATTRIB_NORMAL,
+			4, GL_FLOAT,
+			GL_FALSE,
+			sizeof(Particle),
+			reinterpret_cast<void*>(offsetof(Particle, velocity))
+		);
 
 	glBindVertexArray(0);
 }

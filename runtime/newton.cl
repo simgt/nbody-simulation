@@ -7,16 +7,16 @@ float bind(float c, float a, float b) {
     return c;
 }
 
-__kernel void newton (
+__kernel void resolve (
 		__global float2* p_in,
 		__global float2* p_out,
 		__global float2* v_in,
 		__global float2* v_out,
-		const uint count,
 		const float dt
 	) {
-
 	uint i = get_global_id(0);
+	uint count = get_global_size(0);
+
 	if (i < count) {
 		float2 p = p_in[i];
 		float2 v = v_in[i];
@@ -27,7 +27,7 @@ __kernel void newton (
 				float d = length(c);				
 				if (d < 2 * BALL_RADIUS) {
 					// minimum translation distance to push balls appart
-					//float2 mtd = c * (float)(2.0 * BALL_RADIUS - d);
+					float2 mtd = c * (float)(2.0 * BALL_RADIUS - d);
 					
 					//p += mtd / 2.0;
 
@@ -40,15 +40,15 @@ __kernel void newton (
 					float uj = dot(v_in[j], c);
 
 					// ignore if the particles are moving away from each-other
-					if (ui > 0.0 && uj < 0.0) continue;
+					if (ui > 0.0/* && uj < 0.0*/) continue;
 
 					// Replace the collision velocity components
 					// with the new ones
-					v += (uj - ui) * c * 0.9;
+					v += (uj - ui) * c;
 				}
 			}
 		
-		v.y -= 9.8 * dt;
+		v.y -= 0.8 * dt;
 
 		p += v * dt;	
 

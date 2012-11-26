@@ -25,6 +25,16 @@ void compute (
         float dt
     );
 
+void nbody_compute (
+        cl_device_id device,
+        cl_context context,
+        cl_kernel kernel,
+        cl_command_queue queue,
+        cl_mem p_buffer,
+        cl_mem q_buffer,
+        float dt
+    );
+
 void draw (
         te::Context& context,
         te::Shader& shader,
@@ -89,7 +99,7 @@ int main () {
     }
  
     // create the compute program from the source buffer
-    const char* kernel_source = loadSource("runtime/particles.cl");
+    const char* kernel_source = loadSource("runtime/nbody.cl");
     cl_program program = clCreateProgramWithSource(clcontext, 1, &kernel_source, 0, &error);
     if (!program) {
         std::cerr << "error: Failed to create compute program!" << std::endl;
@@ -109,7 +119,7 @@ int main () {
     }
  
     // create the compute kernel in the program
-    cl_kernel kernel = clCreateKernel(program, "newton", &error);
+    cl_kernel kernel = clCreateKernel(program, "resolve", &error);
     if (!kernel || error != CL_SUCCESS) {
         std::cerr << "error: Failed to create compute kernel!" << std::endl;
         exit(1);
@@ -135,40 +145,33 @@ int main () {
                             q_mesh->vertex_buffer()->handle(),
                             &error
                         );
-
-    // create velocity buffers
-    cl_mem u_buffer = clCreateBuffer(
-                            clcontext, CL_MEM_READ_WRITE,
-                            sizeof(Vec2f) * PARTICLES_COUNT,
-                            0,
-                            &error
-                        );
-
-    cl_mem v_buffer = clCreateBuffer(
-                            clcontext, CL_MEM_READ_WRITE,
-                            sizeof(Vec2f) * PARTICLES_COUNT,
-                            0,
-                            &error
-                        );
     
-    if (!p_buffer || !v_buffer) {
+    if (!p_buffer || !q_buffer) {
         std::cerr << "error: Failed to create buffers!" << std::endl;
         exit(1);
     }
 
     // initialize position and velocity buffers
-    Vec2f p_data[PARTICLES_COUNT];
-    Vec2f u_data[PARTICLES_COUNT];
-    for (uint i = 0; i < PARTICLES_COUNT; i++) {
-        p_data[i] = Vec2f::Random();
-        p_data[i].normalize();
+    Particle p_data[PARTICLES_COUNT];
 
-        u_data[i] = Vec2f::Random();
-        u_data[i] = u_data[i].normalized() / 4;
+    p_data[0].position = Vec4f(0, 0, 0, 2);
+    p_data[0].velocity = Vec4f::Zero();
+
+    for (uint i = 0; i < PARTICLES_COUNT; i++) {
+        //Vec2f p = Vec2f::Random().normalized().array() / 2;
+        p_data[i].position.x() = (float)rand() / RAND_MAX * 2 - 1;//p.x();
+        p_data[i].position.y() = (float)rand() / RAND_MAX * 2 - 1;//p.y();
+        p_data[i].position.z() = 0;
+        p_data[i].position.w() = (float)rand() / RAND_MAX;
+
+        //float k = (float)rand() / RAND_MAX;
+        //u_data[i] = p_data[i].x() == 0 ? Vec4f(k, 0, 0, 0)
+        //                               : Vec4f(k, -p_data[i].y() / p_data[i].x() * k, 0, 0);
+        p_data[i].velocity = Vec4f::Zero();
     }
 
-    error  = clEnqueueWriteBuffer(command_queue, p_buffer, CL_TRUE, 0, sizeof(Vec2f) * PARTICLES_COUNT, p_data, 0, 0, 0);
-    error |= clEnqueueWriteBuffer(command_queue, u_buffer, CL_TRUE, 0, sizeof(Vec2f) * PARTICLES_COUNT, u_data, 0, 0, 0);
+    error  = clEnqueueWriteBuffer(command_queue, p_buffer, CL_TRUE, 0, sizeof(Particle) * PARTICLES_COUNT, p_data, 0, 0, 0);
+    error |= clEnqueueWriteBuffer(command_queue, q_buffer, CL_TRUE, 0, sizeof(Particle) * PARTICLES_COUNT, p_data, 0, 0, 0);
     
     if (error != CL_SUCCESS) {
         std::cerr << "Error: Failed to initialize buffers! " << error << std::endl;
@@ -184,12 +187,11 @@ int main () {
         float dt = context.time();
         //float fps = 1 / t;
 
-        compute(device, clcontext, kernel, command_queue, p_buffer, q_buffer, u_buffer, v_buffer, dt);
+        nbody_compute(device, clcontext, kernel, command_queue, p_buffer, q_buffer, dt / 1000);
         draw(context, *shader, *p_mesh);
 
         // swap buffers
         swap(p_buffer, q_buffer);
-        swap(u_buffer, v_buffer);
         swap(p_mesh, q_mesh);
     }
 

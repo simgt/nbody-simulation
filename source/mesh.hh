@@ -1,10 +1,11 @@
 #pragma once
 
 #include <glte/glte.hh>
+#include "common.hh"
 
 class Mesh {
 public:
-	typedef te::Buffer<GL_ARRAY_BUFFER, Vec2f> Buffer;
+	typedef te::Buffer<GL_ARRAY_BUFFER, Particle> Buffer;
 
 	Mesh ();
 	Mesh (GLenum vertex_hint);

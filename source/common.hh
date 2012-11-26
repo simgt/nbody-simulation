@@ -1,9 +1,17 @@
 #pragma once
 
-typedef unsigned char uchar;
-typedef unsigned int uint;
+#include <Eigen/Dense>
 
 #define WINDOW_W 600
 #define WINDOW_H 600
-#define PARTICLES_COUNT 128
-#define PARTICLES_SIZE 20
+#define PARTICLES_COUNT 4096
+#define PARTICLES_RADIUS 15
+
+typedef unsigned char uchar;
+typedef unsigned int uint;
+typedef Eigen::Vector4f Vec4f;
+
+struct Particle {
+	Vec4f position;
+	Vec4f velocity;
+};

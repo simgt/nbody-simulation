@@ -16,16 +16,14 @@ void compute (
 		float dt
 	) {
 	cl_int error;
-	uint count = PARTICLES_COUNT;
 	
 	// set kernel's arguments
     error = 0;
-    error  = clSetKernelArg(kernel, 0, sizeof(cl_mem), &p_buffer);
-    error |= clSetKernelArg(kernel, 1, sizeof(cl_mem), &q_buffer);
-    error |= clSetKernelArg(kernel, 2, sizeof(cl_mem), &u_buffer);
-    error |= clSetKernelArg(kernel, 3, sizeof(cl_mem), &v_buffer);
-    error |= clSetKernelArg(kernel, 4, sizeof(uint), &count);
-    error |= clSetKernelArg(kernel, 5, sizeof(float), &dt);
+    error  = clSetKernelArg(kernel, 0, sizeof(float), &dt);
+    error |= clSetKernelArg(kernel, 1, sizeof(cl_mem), &p_buffer);
+    error |= clSetKernelArg(kernel, 2, sizeof(cl_mem), &q_buffer);
+    error |= clSetKernelArg(kernel, 3, sizeof(cl_mem), &u_buffer);
+    error |= clSetKernelArg(kernel, 4, sizeof(cl_mem), &v_buffer);
     if (error != CL_SUCCESS) {
         std::cerr << "error: Failed to set kernel arguments! " << error << std::endl;
         exit(EXIT_FAILURE);
@@ -41,7 +39,7 @@ void compute (
  
     // execute the kernel over the entire range of our 1d input data set
     // using the maximum number of work group items for this device
-    size_t global = count;
+    size_t global = PARTICLES_COUNT;
     if (global < local)
         local = global;
 

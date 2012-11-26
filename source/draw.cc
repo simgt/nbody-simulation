@@ -18,8 +18,8 @@ void draw (
     Vec2f viewport_size(width, height);
     glUniform2fv(uniform_viewport_size, 1, viewport_size.data());
 
-    GLuint uniform_point_size = glGetUniformLocation(shader.handle(), "point_size");
-    glUniform1f(uniform_point_size, PARTICLES_SIZE);
+    GLuint uniform_point_radius = glGetUniformLocation(shader.handle(), "point_radius");
+    glUniform1f(uniform_point_radius, PARTICLES_RADIUS);
 
     // bind the VAO associated to the mesh
     glBindVertexArray(mesh.handle());
@@ -37,7 +37,7 @@ void draw (
     CHECK_GL_ERROR();
 
     // draw mesh's elements
-    glPointSize(20);
+    glPointSize(PARTICLES_RADIUS * 2);
     glDrawArrays(
         GL_POINTS,
         0,
