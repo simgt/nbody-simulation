@@ -57,14 +57,31 @@ int main () {
     NBody nbody(device, clcontext, 4096);
     nbody.reset();
 
+    // camera
+    Vec4f camera (0, 0, 1, 0);
+
     // main loop
     while (context.exist()) {
+        if (glfwGetKey('A')) // zoom in
+            camera.z() = std::max(0.1, camera.z() * 0.9);
+        if (glfwGetKey('Z')) // zoom out
+            camera.z() *= 1.1;
+
+        if (glfwGetKey(GLFW_KEY_UP))
+            camera.y() += 0.1 * camera.z();
+        if (glfwGetKey(GLFW_KEY_DOWN))
+            camera.y() -= 0.1 * camera.z();
+        if (glfwGetKey(GLFW_KEY_LEFT))
+            camera.x() -= 0.1 * camera.z();
+        if (glfwGetKey(GLFW_KEY_RIGHT))
+            camera.x() += 0.1 * camera.z();
+
         context.clear();
         float dt = context.time();
         //float fps = 1 / t;
 
         nbody.iterate(command_queue, dt / 200);
-        nbody.draw();
+        nbody.draw(camera);
 
         context.swap();
     }

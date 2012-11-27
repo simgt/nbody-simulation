@@ -25,7 +25,7 @@ float blue(float gray) {
 }
 
 uniform vec2 viewport_size;
-uniform float point_radius;
+uniform float max_radius;
 uniform vec4 camera;
 
 in vec4 position;
@@ -39,7 +39,7 @@ void main() {
 	gl_Position = vec4((position.xy - camera.xy) / camera.z, 0, 1);
 
   	frag_emit_pos = viewport_size / 2.0 + (gl_Position.xy * viewport_size / 2.0);
-    frag_radius = clamp(position.w * point_radius, 1, point_radius); //point_radius;//
+    frag_radius = clamp(position.w * max_radius, 1, max_radius); //point_radius;//
     float v = (clamp(length(normal), 0, 60) / 60) * 2 - 1;
     frag_color = vec4(red(v), green(v), blue(v), 1); //vec4(1,1,1,1); //
 }

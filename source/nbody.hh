@@ -13,7 +13,7 @@ public:
 
 	void reset ();
 	void iterate (cl_command_queue queue, float dt);
-	void draw () const;
+	void draw (const Vec4f camera) const;
 
 private:
 	void swap_buffers ();
@@ -23,6 +23,11 @@ private:
 	Mesh* p_mesh_;
 	Mesh* q_mesh_;
 	te::Shader* shader_;
+	struct {
+		GLuint viewport_size;
+		GLuint max_radius;
+		GLuint camera;
+	} uniforms_;
 
 	cl_mem p_buffer_, q_buffer_;
 	cl_program program_;

@@ -39,6 +39,13 @@ namespace te {
 
 		///@}
 
+		/// \name Methods
+		///@{
+
+		void enable_attributes () const;
+
+		///@}
+
 		static Shader* load (const std::string& vertex_file, const std::string& fragment_file);
 
 	private:

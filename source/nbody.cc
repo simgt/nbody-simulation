@@ -22,6 +22,10 @@ NBody::NBody (
                     "solid.Fragment"
                 );
 
+    uniforms_.viewport_size = glGetUniformLocation(shader_->handle(), "viewport_size");
+    uniforms_.max_radius = glGetUniformLocation(shader_->handle(), "max_radius");
+    uniforms_.camera = glGetUniformLocation(shader_->handle(), "camera");
+
 
     // OpenCL objects
     cl_int error;
@@ -159,55 +163,25 @@ void NBody::iterate (cl_command_queue queue, float dt) {
     }
 }
 
-void NBody::draw () const {
-    static float distance = 1;
-    static Vec4f camera (0, 0, 1, 0);
-
-    if (glfwGetKey('A')) // zoom in
-        camera.z() = std::max(0.1, camera.z() * 0.9);
-    if (glfwGetKey('Z')) // zoom out
-        camera.z() *= 1.1;
-
-    if (glfwGetKey(GLFW_KEY_UP))
-        camera.y() += 0.1 * camera.z();
-    if (glfwGetKey(GLFW_KEY_DOWN))
-        camera.y() -= 0.1 * camera.z();
-    if (glfwGetKey(GLFW_KEY_LEFT))
-        camera.x() -= 0.1 * camera.z();
-    if (glfwGetKey(GLFW_KEY_RIGHT))
-        camera.x() += 0.1 * camera.z();
-
+void NBody::draw (const Vec4f camera) const {
     glUseProgram(shader_->handle());
 
-    // retrieve window size
-    GLuint uniform_viewport_size = glGetUniformLocation(shader_->handle(), "viewport_size");
-    int width, height;
-    glfwGetWindowSize(&width, &height);
-    Vec2f viewport_size(width, height);
-    glUniform2fv(uniform_viewport_size, 1, viewport_size.data());
-
-    // set radius uniform
-    GLuint uniform_point_radius = glGetUniformLocation(shader_->handle(), "point_radius");
-    glUniform1f(uniform_point_radius, PARTICLES_RADIUS);
-
-    // set scale uniform
-    GLuint uniform_camera = glGetUniformLocation(shader_->handle(), "camera");
-    glUniform4fv(uniform_camera, 1, camera.data());
+    // set uniforms
+    {
+        int w, h;
+        glfwGetWindowSize(&w, &h);
+        Vec2f tmp (w, h);
+        glUniform2fv(uniforms_.viewport_size, 1, tmp.data());
+        
+        glUniform1f(uniforms_.max_radius, PARTICLES_RADIUS);
+        glUniform4fv(uniforms_.camera, 1, camera.data());
+    }
 
     // bind the VAO associated to the mesh
     glBindVertexArray(p_mesh_->handle());
-    
-    CHECK_GL_ERROR();
 
     // enable/disable attributes depending on the shader
-    for (uint i = 0; i < te::Shader::NUM_ATTRIBS; i++) {
-        if (shader_->has_attribute(te::Shader::Attribute(i)))
-            glEnableVertexAttribArray(i);
-        else
-            glDisableVertexAttribArray(i);
-    }
-
-    CHECK_GL_ERROR();
+    shader_->enable_attributes();
 
     // draw mesh's elements
     glPointSize(PARTICLES_RADIUS * 2);
@@ -216,8 +190,6 @@ void NBody::draw () const {
         0,
         p_mesh_->vertex_buffer()->size()
     );
-
-    CHECK_GL_ERROR();
 
     // clear states
     glBindVertexArray(0);

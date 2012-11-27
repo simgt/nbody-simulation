@@ -41,6 +41,17 @@ namespace te {
 	Shader::~Shader () {
 		//@todo
 	}
+
+	void Shader::enable_attributes () const {
+		for (uint i = 0; i < te::Shader::NUM_ATTRIBS; i++) {
+	        if (has_attribute(te::Shader::Attribute(i)))
+	            glEnableVertexAttribArray(i);
+	        else
+	            glDisableVertexAttribArray(i);
+	    }
+
+	    CHECK_GL_ERROR();
+	}
 }
 
 namespace {
