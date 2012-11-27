@@ -37,6 +37,10 @@ namespace te {
 
 		CHECK_GL_ERROR();
 	}
+
+	Shader::~Shader () {
+		//@todo
+	}
 }
 
 namespace {

@@ -1,5 +1,4 @@
-#include "mesh.hh"
-#include <glte/glte.hh>
+#include "nbody.hh"
 
 #include <cassert>
 #include <cstddef>

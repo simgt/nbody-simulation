@@ -1,73 +1,51 @@
-float bind(float c, float a, float b) {
-    if (c < a) c = a;
-    if (c > b) c = b;
-    else c = c;
-    return c;
-}
-
 typedef struct {
 	float4 p;
 	float4 v;
 } Particle;
 
-kernel void resolve (
-		const float dt1,
+kernel void iterate (
+		const float dt,
 		const float eps,
 		global Particle* old,
 		global Particle* new,
-		local float4* pblock
+		local float4* block
 	) {
-	const float4 dt = (float4)(dt1, dt1, dt1, 0.0f);
+	int gid = get_global_id(0);
+	int lid = get_local_id(0); // id inside the workgroup
 
-	int gti = get_global_id(0);
-	int ti = get_local_id(0);
-
-	int n = get_global_size(0);
-	int nt = get_local_size(0);
-	int nb = n/nt;
+	int gn = get_global_size(0); // total num of particles
+	int ln = get_local_size(0); // workgroup size
+	int num_blocks = gn / ln;
 
 
-	if (gti >= n) return;
+	if (gid >= gn) return; // don't process if out of bounds
 
-	float4 p = old[gti].p;
-	float4 v = old[gti].v;
+	float4 p = old[gid].p;
+	float4 v = old[gid].v;
 
-	float4 a = (float4)(0.0, 0.0, 0.0, 0.0);
+	float4 a = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
 
-	for(int jb=0; jb < nb; jb++) { /* Foreach block ... */
-		pblock[ti] = old[jb*nt+ti].p; /* Cache ONE particle position */
-		barrier(CLK_LOCAL_MEM_FENCE); /* Wait for others in the work-group */
+	for(int b = 0; b < num_blocks; b++) { // foreach block
+		block[lid] = old[b * ln + lid].p; // cache one particle position
+		barrier(CLK_LOCAL_MEM_FENCE); // wait for others in the workgroup
 
-		for(int j=0; j<nt; j++) { /* For ALL cached particle positions ... */
-			float4 p2 = pblock[j]; /* Read a cached particle position */
-			float4 d = p2 - p;
-			float invr = rsqrt(d.x*d.x + d.y*d.y + d.z*d.z + eps);
-			float f = p2.w*invr*invr*invr;
-			a += f*d; /* Accumulate acceleration */
+		for(int i = 0; i < ln; i++) { // foreach cached particle
+			float4 q = block[i]; // recover the cached particle
+			float4 d = q - p;
+			float invr = rsqrt(d.x * d.x + d.y * d.y + d.z * d.z + eps);
+			float f = q.w * invr * invr * invr;
+			a += f * d; // accumulate acceleration
 		}
 
-		barrier(CLK_LOCAL_MEM_FENCE); /* Wait for others in work-group */
+		barrier(CLK_LOCAL_MEM_FENCE); // wait for others in the workgroup
 	}
 
-	if (gti != 0) { // particle 0 doesn't move
-		p += dt*v + 0.5f*dt*dt*a;
-		v += dt*a;
-	}
+	//if (gid == 0) return; // particle 0 doesn't move
 
-	if (p.x < -1 || p.x > 1)
-		v.x = -v.x;
-
-	if (p.y < -1 || p.y > 1)
-		v.y = -v.y;
-
-	if (p.x < -1 || p.x > 1 || p.y < -1 || p.y > 1) {
-		//v.x *= 0.5;
-		//v.y *= 0.5;
-	}
-
-	p.x = bind(p.x, -1, 1);
-	p.y = bind(p.y, -1, 1);
+	const float4 t = (float4)(dt, dt, dt, 0.0f);
+	p += t * v + 0.5f * t * t * a;
+	v += t * a;
 	
-	new[gti].p = p;
-	new[gti].v = v;
+	new[gid].p = p;
+	new[gid].v = v;
 }

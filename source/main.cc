@@ -1,68 +1,16 @@
 #include "common.hh"
 #include "cl.hh"
-#include "mesh.hh"
+#include "nbody.hh"
 
 #include <glte/glte.hh>
 #include <iostream>
-#include <cstdlib>
-
-template <typename T>
-void swap (T& a, T& b) {
-    T tmp = a;
-    a = b;
-    b = tmp;
-}
-
-void compute (
-        cl_device_id device,
-        cl_context context,
-        cl_kernel kernel,
-        cl_command_queue,
-        cl_mem p_buffer,
-        cl_mem q_buffer,
-        cl_mem u_buffer,
-        cl_mem v_buffer,
-        float dt
-    );
-
-void nbody_compute (
-        cl_device_id device,
-        cl_context context,
-        cl_kernel kernel,
-        cl_command_queue queue,
-        cl_mem p_buffer,
-        cl_mem q_buffer,
-        float dt
-    );
-
-void draw (
-        te::Context& context,
-        te::Shader& shader,
-        Mesh& mesh
-    );
 
 int main () {
-    // ------------
-    //    OPENGL 
-    // ------------
-
+    // OpenGL init 
     te::Context context(WINDOW_W, WINDOW_H, false, "particles.cc");
+    context.clear_color({0, 0, 0, 1});
 
-    context.clear_color({0.2, 0.2, 0.2, 1});
-
-    te::Shader* shader = te::Shader::load(
-                                    "solid.Vertex",
-                                    "solid.Fragment"
-                                );
-
-    Mesh* p_mesh = new Mesh;
-    Mesh* q_mesh = new Mesh;
-    p_mesh->vertex_buffer()->reserve(PARTICLES_COUNT);
-    q_mesh->vertex_buffer()->reserve(PARTICLES_COUNT);
-
-    // ------------
-    //    OPENCL 
-    // ------------
+    // OpenCL init
 
     cl_int error;
     cl_device_id device;
@@ -97,33 +45,6 @@ int main () {
         std::cerr << "error: Failed to create a compute context!" << std::endl;
         return EXIT_FAILURE;
     }
- 
-    // create the compute program from the source buffer
-    const char* kernel_source = loadSource("runtime/nbody.cl");
-    cl_program program = clCreateProgramWithSource(clcontext, 1, &kernel_source, 0, &error);
-    if (!program) {
-        std::cerr << "error: Failed to create compute program!" << std::endl;
-        return EXIT_FAILURE;
-    }
- 
-    // build the program executable
-    error = clBuildProgram(program, 0, 0, 0, 0, 0);
-    if (error != CL_SUCCESS) {
-        size_t len;
-        char buffer[2048];
- 
-        std::cerr << "error: Failed to build program executable!" << std::endl;
-        clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, &len);
-        std::cerr << buffer << std::endl;
-        exit(1);
-    }
- 
-    // create the compute kernel in the program
-    cl_kernel kernel = clCreateKernel(program, "resolve", &error);
-    if (!kernel || error != CL_SUCCESS) {
-        std::cerr << "error: Failed to create compute kernel!" << std::endl;
-        exit(1);
-    }
 
     // create a command queue
     cl_command_queue command_queue = clCreateCommandQueue(clcontext, device, 0, &error);
@@ -131,79 +52,26 @@ int main () {
         std::cerr << "error: Failed to create a command queue!" << std::endl;
         return EXIT_FAILURE;
     }
- 
-    // create OpenCL buffer from the OpenGL vertex buffer
 
-    cl_mem p_buffer = clCreateFromGLBuffer(
-                            clcontext, CL_MEM_READ_WRITE,
-                            p_mesh->vertex_buffer()->handle(),
-                            &error
-                        );
+    // simulation init
+    NBody nbody(device, clcontext, 4096);
+    nbody.reset();
 
-    cl_mem q_buffer = clCreateFromGLBuffer(
-                            clcontext, CL_MEM_READ_WRITE,
-                            q_mesh->vertex_buffer()->handle(),
-                            &error
-                        );
-    
-    if (!p_buffer || !q_buffer) {
-        std::cerr << "error: Failed to create buffers!" << std::endl;
-        exit(1);
-    }
-
-    // initialize position and velocity buffers
-    Particle p_data[PARTICLES_COUNT];
-
-    p_data[0].position = Vec4f(0, 0, 0, 2);
-    p_data[0].velocity = Vec4f::Zero();
-
-    for (uint i = 0; i < PARTICLES_COUNT; i++) {
-        //Vec2f p = Vec2f::Random().normalized().array() / 2;
-        p_data[i].position.x() = (float)rand() / RAND_MAX * 2 - 1;//p.x();
-        p_data[i].position.y() = (float)rand() / RAND_MAX * 2 - 1;//p.y();
-        p_data[i].position.z() = 0;
-        p_data[i].position.w() = (float)rand() / RAND_MAX;
-
-        //float k = (float)rand() / RAND_MAX;
-        //u_data[i] = p_data[i].x() == 0 ? Vec4f(k, 0, 0, 0)
-        //                               : Vec4f(k, -p_data[i].y() / p_data[i].x() * k, 0, 0);
-        p_data[i].velocity = Vec4f::Zero();
-    }
-
-    error  = clEnqueueWriteBuffer(command_queue, p_buffer, CL_TRUE, 0, sizeof(Particle) * PARTICLES_COUNT, p_data, 0, 0, 0);
-    error |= clEnqueueWriteBuffer(command_queue, q_buffer, CL_TRUE, 0, sizeof(Particle) * PARTICLES_COUNT, p_data, 0, 0, 0);
-    
-    if (error != CL_SUCCESS) {
-        std::cerr << "Error: Failed to initialize buffers! " << error << std::endl;
-        exit(1);
-    }
-
-
-    // -------------
-    //    LOOPING
-    // -------------
-
+    // main loop
     while (context.exist()) {
+        context.clear();
         float dt = context.time();
         //float fps = 1 / t;
 
-        nbody_compute(device, clcontext, kernel, command_queue, p_buffer, q_buffer, dt / 1000);
-        draw(context, *shader, *p_mesh);
+        nbody.iterate(command_queue, dt / 200);
+        nbody.draw();
 
-        // swap buffers
-        swap(p_buffer, q_buffer);
-        swap(p_mesh, q_mesh);
+        context.swap();
     }
 
 
-    // ------------
-    //    OPENCL 
-    // ------------
+    // OpenCL release
 
-    clReleaseMemObject(p_buffer);
-
-    clReleaseProgram(program);
-    clReleaseKernel(kernel);
     clReleaseCommandQueue(command_queue);
     clReleaseContext(clcontext);
 
