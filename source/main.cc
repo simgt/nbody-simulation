@@ -5,7 +5,12 @@
 #include <glte/glte.hh>
 #include <iostream>
 
-int main () {
+int main (int argc, const char** argv) {
+    if (argc < 3) {
+        std::cerr << "Usage " << argv[0] << " [simulation size] [dt]" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
     // OpenGL init 
     te::Context context(WINDOW_W, WINDOW_H, false, "particles.cc");
     context.clear_color({0, 0, 0, 1});
@@ -54,8 +59,10 @@ int main () {
     }
 
     // simulation init
-    NBody nbody(device, clcontext, 4096);
+    NBody nbody(device, clcontext, atoi(argv[1]));
     nbody.reset();
+
+    float dt = atof(argv[2]);
 
     // camera
     Vec4f camera (0, 0, 1, 0);
@@ -77,10 +84,10 @@ int main () {
             camera.x() += 0.1 * camera.z();
 
         context.clear();
-        float dt = context.time();
+        //float dt = context.time();
         //float fps = 1 / t;
 
-        nbody.iterate(command_queue, dt / 200);
+        nbody.iterate(command_queue, dt);
         nbody.draw(camera);
 
         context.swap();
